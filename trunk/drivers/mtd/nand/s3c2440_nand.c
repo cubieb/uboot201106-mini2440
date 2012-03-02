@@ -71,10 +71,10 @@ static void s3c2440_hwcontrol(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 		chip->IO_ADDR_W = (void *)IO_ADDR_W;
 
 		if (ctrl & NAND_NCE)
-			writel(readl(&nand->nfconf) & ~S3C2440_NFCONF_nCE,
+			writel(readl(&nand->nfconf) & ~S3C2440_NFCONT_nCE,
 			       &nand->nfconf);
 		else
-			writel(readl(&nand->nfconf) | S3C2440_NFCONF_nCE,
+			writel(readl(&nand->nfconf) | S3C2440_NFCONT_nCE,
 			       &nand->nfconf);
 	}
 
