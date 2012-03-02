@@ -24,17 +24,17 @@
 #include <asm/arch/s3c24x0_cpu.h>
 #include <asm/io.h>
 
-#define S3C2440_NFCONF_EN          (1<<15)
-#define S3C2440_NFCONF_512BYTE     (1<<14)
-#define S3C2440_NFCONF_4STEP       (1<<13)
-#define S3C2440_NFCONF_INITECC     (1<<12)
-#define S3C2440_NFCONF_nFCE        (1<<11)
-#define S3C2440_NFCONF_TACLS(x)    ((x)<<8)
-#define S3C2440_NFCONF_TWRPH0(x)   ((x)<<4)
-#define S3C2440_NFCONF_TWRPH1(x)   ((x)<<0)
+#define S3C2440_NFCONT_SECCL       (1<<6)//#define S3C2440_NFCONF_EN          (1<<15)
+#define S3C2440_NFCONT_MECCL       (1<<5)//#define S3C2440_NFCONF_512BYTE     (1<<14)
+#define S3C2440_NFCONT_INITECC     (1<<4)//#define S3C2440_NFCONF_4STEP       (1<<13)
+#define S3C2440_NFCONT_nCE         (1<<1)//#define S3C2440_NFCONF_INITECC     (1<<12)
+#define S3C2440_NFCONT_MODE        (1<<0)//#define S3C2440_NFCONF_nFCE        (1<<11)
+#define S3C2440_NFCONF_TACLS(x)    ((x)<<12)//#define S3C2440_NFCONF_TACLS(x)    ((x)<<8)
+#define S3C2440_NFCONF_TWRPH0(x)   ((x)<<8)//#define S3C2440_NFCONF_TWRPH0(x)   ((x)<<4)
+#define S3C2440_NFCONF_TWRPH1(x)   ((x)<<4)//#define S3C2440_NFCONF_TWRPH1(x)   ((x)<<0)
 
-#define S3C2440_ADDR_NALE 4
-#define S3C2440_ADDR_NCLE 8
+#define S3C2440_ADDR_NALE        0x08//#define S3C2440_ADDR_NALE 4
+#define S3C2440_ADDR_NCLE       0x0C//#define S3C2440_ADDR_NCLE 8
 
 #ifdef CONFIG_NAND_SPL
 
@@ -65,14 +65,16 @@ static void s3c2440_hwcontrol(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 			IO_ADDR_W |= S3C2440_ADDR_NCLE;
 		if (!(ctrl & NAND_ALE))
 			IO_ADDR_W |= S3C2440_ADDR_NALE;
+                if(cmd ==NAND_CMD_NONE)
+                        IO_ADDR_W = &nand->nfdata;
 
 		chip->IO_ADDR_W = (void *)IO_ADDR_W;
 
 		if (ctrl & NAND_NCE)
-			writel(readl(&nand->nfconf) & ~S3C2440_NFCONF_nFCE,
+			writel(readl(&nand->nfconf) & ~S3C2440_NFCONF_nCE,
 			       &nand->nfconf);
 		else
-			writel(readl(&nand->nfconf) | S3C2440_NFCONF_nFCE,
+			writel(readl(&nand->nfconf) | S3C2440_NFCONF_nCE,
 			       &nand->nfconf);
 	}
 
@@ -138,16 +140,21 @@ int board_nand_init(struct nand_chip *nand)
 	twrph0 = CONFIG_S3C24XX_TWRPH0;
 	twrph1 =  CONFIG_S3C24XX_TWRPH1;
 #else
-	tacls = 4;
-	twrph0 = 8;
-	twrph1 = 8;
+	tacls = 2;
+	twrph0 = 3;
+	twrph1 = 1;
 #endif
 
-	cfg = S3C2440_NFCONF_EN;
-	cfg |= S3C2440_NFCONF_TACLS(tacls - 1);
+	//cfg = S3C2440_NFCONF_EN;
+	cfg  = S3C2440_NFCONF_TACLS(tacls - 1);//cfg |= S3C2440_NFCONF_TACLS(tacls - 1);
 	cfg |= S3C2440_NFCONF_TWRPH0(twrph0 - 1);
 	cfg |= S3C2440_NFCONF_TWRPH1(twrph1 - 1);
 	writel(cfg, &nand_reg->nfconf);
+
+        cfg = S3C2440_NFCONT_SECCL;
+        cfg |= S3C2440_NFCONT_MECCL;
+        cfg |= S3C2440_NFCONT_MODE;
+        writel(cfg,&nand_reg->nfcont);
 
 	/* initialize nand_chip data structure */
 	nand->IO_ADDR_R = (void *)&nand_reg->nfdata;
